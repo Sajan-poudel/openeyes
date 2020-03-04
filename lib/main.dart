@@ -1,19 +1,23 @@
 import 'dart:core';
+// import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:speech_recognition/speech_recognition.dart';
-import 'package:flutter_socket_io/flutter_socket_io.dart';
-import 'package:flutter_socket_io/socket_io_manager.dart';
+// import 'package:flutter_socket_io/flutter_socket_io.dart';
+// import 'package:flutter_socket_io/socket_io_manager.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:adhara_socket_io/adhara_socket_io.dart';
 
 
 void main() => runApp(MyApp());
+
+const String uri = 'http://13.232.28.46:5000/';
 
 class MyApp extends StatelessWidget {
   @override
@@ -36,23 +40,29 @@ class _HomePageState extends State<HomePage> {
   String resulttext = "";
   bool speakin = false;
   List<String> split;
-  SocketIO socketIO;
+  // SocketIO socketIO;
   final FlutterTts _flutterTts = FlutterTts();
+  SocketIOManager manager;
 
   @override
   void initState() {
     // TODO: implement initState
     // socketIO = SocketIOManager().createSocketIO(
-    //   'https://13.232.28.46:3000',
-    //   '/',
+    //   'http://13.232.28.46:3000',
+    //   ''
     // );
     // socketIO.init();
-    // socketIO.subscribe('receive_message', (jsonData) {
+    // socketIO.subscribe('some-info', (jsonData) {
     //   //Convert the JSON data received into a Map
-    //   print(jsonData);
+    //   Map<String, dynamic> data = json.decode(jsonData);
+    //   print(data['msg']);
     // });
     // socketIO.connect();
+    // socketIO.sendMessage("connection", "hello my name is sajan");
+    // socketIO.sendMessage("from-client", "hi i am sajan conecting");
     super.initState();
+    manager = SocketIOManager();
+    initSocket();
     _speechRecognization = SpeechRecognition();
     _speechRecognization.setAvailabilityHandler(
         (bool res) => setState(() => _isavailable = res));
@@ -65,6 +75,22 @@ class _HomePageState extends State<HomePage> {
     _speechRecognization
         .activate()
         .then((res) => setState(() => _isavailable = res));
+  }
+
+  initSocket()async{
+    SocketIO socket= await SocketIOManager().createInstance(SocketOptions(uri));
+    socket.onConnect((data){
+      print("conected");
+      print(data);
+      socket.emit("from-client", ["hi from sajan", 123, {"message": "sala"}]);
+    }); 
+    socket.on('some-info', (data){
+      print(data);
+    });
+    socket.on('get-image-desc', (data){
+      texttovoice(data);
+    });
+    socket.connect();
   }
 
   @override
@@ -142,7 +168,7 @@ class _HomePageState extends State<HomePage> {
           ),
           RaisedButton(
             child: Text("press here for voice"),
-            onPressed: texttovoice,
+            onPressed: null,
           )
         ],
       ),
@@ -170,13 +196,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future texttovoice() async {
+  Future texttovoice(String text) async {
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setPitch(1);
     await _flutterTts.setVolume(1);
     // print(await _flutterTts.getVoices);
     await _flutterTts
-        .speak("hello! i hope you are doing good with hackathon. Happy hack");
+        .speak(text);
   }
 }
 
