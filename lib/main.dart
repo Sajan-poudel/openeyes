@@ -46,9 +46,11 @@ class _HomePageState extends State<HomePage> {
   final FlutterTts _flutterTts = FlutterTts();
   SocketIOManager manager;
   FlutterSmsPlatform flutterSmsPlatform = FlutterSmsPlatform();
-  String alert = "this is awesome";
   List<String> people = ['7483054109'];
   SocketIO socket;
+  double currentlat = 13.1278059;
+  double currentlong = 77.5880203;
+  String alert = "I am stuck in this location:\nlatitude: 13.1278059\nlongitude: 77.5880203";
 
   @override
   void initState() {
@@ -67,6 +69,13 @@ class _HomePageState extends State<HomePage> {
     // socketIO.sendMessage("connection", "hello my name is sajan");
     // socketIO.sendMessage("from-client", "hi i am sajan conecting");
     super.initState();
+    _getLocation().then((position){
+      setState(() {
+        currentlat = position.latitude;
+        currentlong = position.longitude;
+        alert = "I am stuck in this location:\nlatitude: ${currentlat}\nlongitude: ${currentlong}";
+      });
+    });
     manager = SocketIOManager();
     initSocket();
     _speechRecognization = SpeechRecognition();
@@ -239,6 +248,18 @@ class _HomePageState extends State<HomePage> {
       Vibration.vibrate();
     }
   }
+
+  Future<Position> _getLocation() async {
+    var currentLocation;
+    try {
+      currentLocation = await Geolocator()
+          .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+    } catch (e) {
+      print("Error : ${e}");
+      // currentLocation = null;
+    }
+    return currentLocation;
+  }
 }
 
 class Mapview extends StatefulWidget {
@@ -307,7 +328,7 @@ class _MapviewState extends State<Mapview> {
         ),
         layers: [
           new TileLayerOptions(
-            // urlTemplate: "http://apis.mapmyindia.com/advancedmaps/v1/ge79np57h6uwlfla4k4fzn2efrgoplnh/still_image?center=widget.deslatitude,widget.deslongitude&zoom=18",
+            // urlTemplate: ""https://mt1.mapmyindia.com/advancedmaps/v1/<licence key>/still_map/{z}/{x}/{y}.png", attribution = 'MapmyIndia'",
             urlTemplate:
                 "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}",
             additionalOptions: {
