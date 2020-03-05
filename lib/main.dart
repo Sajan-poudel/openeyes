@@ -100,6 +100,10 @@ class _HomePageState extends State<HomePage> {
     socket.on('get-image-desc', (data) {
       texttovoice(data);
     });
+    socket.on('piholes', (data) {
+      texttovoice(data);
+    });
+
     socket.connect();
   }
 
