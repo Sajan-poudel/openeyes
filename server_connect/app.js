@@ -10,22 +10,14 @@ microsofComputerVision = require("microsoft-computer-vision");
 
 //*AZURE COMPUTER VISION CONFIG*//
 // const filePath = '/home/anurag/Desktop/Hackathon/hackbout/pithole-detection-azure/Positivedata/G0010036.JPG';
-const predictionKey = "28e9137032b04603ba25dff0ec8aeec7";
-const predictionResourceId = "/subscriptions/ad4a312f-c085-4b7c-b74c-cb9c3a92f529/resourceGroups/AxDu/providers/Microsoft.CognitiveServices/accounts/Pitholedetection-Prediction";
+const predictionKey = "my key";
+const predictionResourceId = "/subscriptions/my token/resourceGroups/AxDu/providers/Microsoft.CognitiveServices/accounts/Pitholedetection-Prediction";
 const endpoint = "https://pitholedetection-prediction.cognitiveservices.azure.com/";
 const util = require('util');
 const PredictionApi = require("@azure/cognitiveservices-customvision-prediction");
 const publishIterationName = "Iteration3";
 const projectId = '24b19b77-2eed-4ba3-8bb6-4c4c137c73d0';
 //*CONFIG OVER*//
-
-//connect to MongoAtlas
-// mongoose.connect('mongodb+srv://AxDU:152452Anurag@@cluster0-nhs71.mongodb.net/OpenEyes?retryWrites=true&w=majority&family=4',{
-//    useNewUrlParser: true,
-//    useFindAndModify: false,
-//    useCreateIndex: true,
-//    useUnifiedTopology: true
-// });
 
 //express csonfig//
 app.set('trust proxy', 1);

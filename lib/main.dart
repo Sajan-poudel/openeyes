@@ -48,9 +48,10 @@ class _HomePageState extends State<HomePage> {
   FlutterSmsPlatform flutterSmsPlatform = FlutterSmsPlatform();
   List<String> people = ['7483054109'];
   SocketIO socket;
-  double currentlat = 13.1278059;
-  double currentlong = 77.5880203;
-  String alert = "I am stuck in this location:\nlatitude: 13.1278059\nlongitude: 77.5880203";
+  double currentlat = 25.343433; //13.1278059;
+  double currentlong = 50.3423423; //77.5880203;
+  String alert =
+      "I am stuck in this location:\nlatitude: 13.1278059\nlongitude: 77.5880203";
 
   @override
   void initState() {
@@ -68,16 +69,17 @@ class _HomePageState extends State<HomePage> {
     // socketIO.connect();
     // socketIO.sendMessage("connection", "hello my name is sajan");
     // socketIO.sendMessage("from-client", "hi i am sajan conecting");
-    super.initState();
-    _getLocation().then((position){
+    _getLocation().then((position) {
       setState(() {
         currentlat = position.latitude;
         currentlong = position.longitude;
-        alert = "I am stuck in this location:\nlatitude: ${currentlat}\nlongitude: ${currentlong}";
+        alert =
+            "I am stuck in this location:\nlatitude: ${currentlat}\nlongitude: ${currentlong}";
       });
     });
-    manager = SocketIOManager();
     initSocket();
+    super.initState();
+    manager = SocketIOManager();
     _speechRecognization = SpeechRecognition();
     _speechRecognization.setAvailabilityHandler(
         (bool res) => setState(() => _isavailable = res));
@@ -243,8 +245,8 @@ class _HomePageState extends State<HomePage> {
     print(res);
   }
 
-  void vibrate()async{
-    if(await Vibration.hasVibrator()){
+  void vibrate() async {
+    if (await Vibration.hasVibrator()) {
       Vibration.vibrate();
     }
   }
@@ -278,8 +280,8 @@ class Mapview extends StatefulWidget {
 }
 
 class _MapviewState extends State<Mapview> {
-  double currentlat = 13.1278059;
-  double currentlong = 77.5880203;
+  double currentlat = 60.2313;//13.1278059;
+  double currentlong =90.38402;//77.5880203;
   var points = <LatLng>[];
   List<dynamic> value;
   var pt = <LatLng>[
@@ -289,32 +291,69 @@ class _MapviewState extends State<Mapview> {
 
   void initState() {
     // TODO: implement initState
-    super.initState();
     _getLocation().then((position) {
-      widget.socketd.emit('get-geometry', [
-        {
-          "start": [currentlat, currentlong],
-          "stop": [widget.deslatitude, widget.deslongitude],
-        }
-      ]);
-      widget.socketd.on("polylines", (data) {
-        print(data);
-        print(data.runtimeType);
-        value = data;
-        print(value.length);
-        setState(() {
-          for (int i = 0; i < value.length; i++) {
-            points.add(LatLng(value[i][0], value[i][1]));
-          }
-          print(points);
-        });
-      });
+      // widget.socketd.emit('get-geometry', [
+      //   {
+      //     "start": [currentlat, currentlong],
+      //     "stop": [widget.deslatitude, widget.deslongitude],
+      //   }
+      // ]);
+      // widget.socketd.on("polylines", (data) {
+      //   print(data);
+      //   print(data.runtimeType);
+      //   value = data;
+      //   print(value.length);
+      //   setState(() {
+      //     for (int i = 0; i < value.length; i++) {
+      //       points.add(LatLng(value[i][0], value[i][1]));
+      //     }
+      //     print(points);
+      //   });
+      // });
       setState(() {
         currentlat = position.latitude;
         currentlong = position.longitude;
+        pt = [
+          LatLng(currentlat, currentlong),
+          LatLng(widget.deslatitude, widget.deslongitude)
+        ];
       });
+      initSocket();
       print(position);
     });
+    super.initState();
+  }
+
+  initSocket() async {
+    widget.socketd = await SocketIOManager().createInstance(SocketOptions(uri));
+    widget.socketd.onConnect((data) {
+      print("conected");
+      print(data);
+      // widget.socketd.emit("from-client", [
+      //   "hi from sajan",
+      //   123,
+      //   {"message": "sala"}
+      // ]);
+    });
+    widget.socketd.emit('get-geometry', [
+      {
+        "start": [currentlat, currentlong],
+        "stop": [widget.deslatitude, widget.deslongitude],
+      }
+    ]);
+    widget.socketd.on("polylines", (data) {
+      print(data);
+      print(data.runtimeType);
+      value = data;
+      print(value.length);
+      setState(() {
+        for (int i = 0; i < value.length; i++) {
+          points.add(LatLng(value[i][0], value[i][1]));
+        }
+        print(points);
+      });
+    });
+    widget.socketd.connect();
   }
 
   @override
@@ -341,8 +380,8 @@ class _MapviewState extends State<Mapview> {
             polylines: [
               Polyline(
                 points: pt,
-                borderStrokeWidth: 10,
-                strokeWidth: 10.0,
+                borderStrokeWidth: 1,
+                strokeWidth: 1,
                 color: Colors.purple,
               ),
             ],
