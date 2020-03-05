@@ -15,6 +15,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:adhara_socket_io/adhara_socket_io.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:flutter_sms/flutter_sms_platform.dart';
+import 'package:vibration/vibration.dart';
 
 void main() => runApp(MyApp());
 
@@ -137,6 +138,7 @@ class _HomePageState extends State<HomePage> {
                 size: MediaQuery.of(context).size.width * 0.98,
               ),
               onPressed: () {
+                vibrate();
                 if (!speakin) {
                   if (_isavailable && !_islistening)
                     _speechRecognization
@@ -227,6 +229,12 @@ class _HomePageState extends State<HomePage> {
     });
     print(res);
   }
+
+  void vibrate()async{
+    if(await Vibration.hasVibrator()){
+      Vibration.vibrate();
+    }
+  }
 }
 
 class Mapview extends StatefulWidget {
@@ -304,7 +312,7 @@ class _MapviewState extends State<Mapview> {
               'id': 'mapbox.streets',
             },
           ),
-          PolylineLayerOptions(
+          new PolylineLayerOptions(
             polylines: [
               Polyline(
                 points: pt,
