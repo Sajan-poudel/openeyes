@@ -13,7 +13,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:adhara_socket_io/adhara_socket_io.dart';
-
+import 'package:flutter_sms/flutter_sms.dart';
+import 'package:flutter_sms/flutter_sms_platform.dart';
 
 void main() => runApp(MyApp());
 
@@ -43,6 +44,10 @@ class _HomePageState extends State<HomePage> {
   // SocketIO socketIO;
   final FlutterTts _flutterTts = FlutterTts();
   SocketIOManager manager;
+  FlutterSmsPlatform flutterSmsPlatform = FlutterSmsPlatform();
+  String alert = "this is awesome";
+  List<String> people = ['7483054109'];
+  SocketIO socket;
 
   @override
   void initState() {
@@ -77,17 +82,21 @@ class _HomePageState extends State<HomePage> {
         .then((res) => setState(() => _isavailable = res));
   }
 
-  initSocket()async{
-    SocketIO socket= await SocketIOManager().createInstance(SocketOptions(uri));
-    socket.onConnect((data){
+  initSocket() async {
+    socket = await SocketIOManager().createInstance(SocketOptions(uri));
+    socket.onConnect((data) {
       print("conected");
       print(data);
-      socket.emit("from-client", ["hi from sajan", 123, {"message": "sala"}]);
-    }); 
-    socket.on('some-info', (data){
+      socket.emit("from-client", [
+        "hi from sajan",
+        123,
+        {"message": "sala"}
+      ]);
+    });
+    socket.on('some-info', (data) {
       print(data);
     });
-    socket.on('get-image-desc', (data){
+    socket.on('get-image-desc', (data) {
       texttovoice(data);
     });
     socket.connect();
@@ -134,12 +143,16 @@ class _HomePageState extends State<HomePage> {
                         .listen(locale: "en_US")
                         .then((result) => print('$result'));
                 } else {
-                  if (resulttext.contains("get me to")) {
-                    split = resulttext.split("get me to");
-                  } else if (resulttext.contains("guide me to")) {
-                    split = resulttext.split("guide me to");
+                  if (resulttext.toLowerCase() == 'sos') {
+                    smssend(alert, people);
+                  } else {
+                    if (resulttext.contains("get me to")) {
+                      split = resulttext.split("get me to");
+                    } else if (resulttext.contains("guide me to")) {
+                      split = resulttext.split("guide me to");
+                    }
+                    fetchlocation(split[1]);
                   }
-                  fetchlocation(split[1]);
                   if (_islistening) {
                     _speechRecognization.stop().then((result) {
                       setState(() => _islistening = result);
@@ -163,13 +176,14 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => Mapview(12.971599, 77.594566)));
+                      builder: (context) =>
+                          Mapview(12.971599, 77.594566, socket)));
             },
           ),
-          RaisedButton(
-            child: Text("press here for voice"),
-            onPressed: null,
-          )
+          // RaisedButton(
+          //   child: Text("press here for voice"),
+          //   onPressed: null,
+          // )
         ],
       ),
     );
@@ -178,15 +192,16 @@ class _HomePageState extends State<HomePage> {
   void fetchlocation(String address) async {
     try {
       http.Response response = await http.get(
-          'https://api.mapbox.com/geocoding/v5/mapbox.places/${Uri.encodeComponent(address)}.json?access_token=pk.eyJ1Ijoic2FqYW4tcG91ZGVsIiwiYSI6ImNrMnZnbGw3ZTA0aTgzbG5xcTNpMDFzbHAifQ.Criu5-m3kWFRKo7vcZ3NYA&limit=1');
+          'https://atlas.mapmyindia.com/api/places/search/json?query=${Uri.encodeComponent(address)}&access_token=1a5dd1f8-df45-40ce-8a4f-ef1d9dc9c731');
       if (response.statusCode == 200 || response.statusCode == 201) {
         // final String res = response.body;
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => Mapview(
-                jsonDecode(response.body)['features'][0]['center'][1],
-                jsonDecode(response.body)['features'][0]['center'][0]),
+                jsonDecode(response.body)['suggestedLocations'][0]['latitude'],
+                jsonDecode(response.body)['suggestedLocations'][0]['longitude'],
+                socket),
           ),
         );
         print(response.body);
@@ -201,18 +216,28 @@ class _HomePageState extends State<HomePage> {
     await _flutterTts.setPitch(1);
     await _flutterTts.setVolume(1);
     // print(await _flutterTts.getVoices);
-    await _flutterTts
-        .speak(text);
+    await _flutterTts.speak(text);
+  }
+
+  void smssend(String alert, List<String> people) async {
+    String res = await flutterSmsPlatform
+        .sendSMS(message: alert, recipients: people)
+        .catchError((onError) {
+      print(onError);
+    });
+    print(res);
   }
 }
 
 class Mapview extends StatefulWidget {
   double deslatitude;
   double deslongitude;
+  SocketIO socketd;
 
-  Mapview([double latitude, double longitude]) {
+  Mapview([double latitude, double longitude, SocketIO socket]) {
     deslatitude = latitude;
     deslongitude = longitude;
+    socketd = socket;
   }
 
   @override
@@ -222,11 +247,35 @@ class Mapview extends StatefulWidget {
 class _MapviewState extends State<Mapview> {
   double currentlat = 13.1278059;
   double currentlong = 77.5880203;
+  var points = <LatLng>[];
+  List<dynamic> value;
+  var pt = <LatLng>[
+    LatLng(36.08708, 72.54032),
+    LatLng(36.08708, 72.54032),
+  ];
 
   void initState() {
     // TODO: implement initState
     super.initState();
     _getLocation().then((position) {
+      widget.socketd.emit('get-geometry', [
+        {
+          "start": [currentlat, currentlong],
+          "stop": [widget.deslatitude, widget.deslongitude],
+        }
+      ]);
+      widget.socketd.on("polylines", (data) {
+        print(data);
+        print(data.runtimeType);
+        value = data;
+        print(value.length);
+        setState(() {
+          for (int i = 0; i < value.length; i++) {
+            points.add(LatLng(value[i][0], value[i][1]));
+          }
+          print(points);
+        });
+      });
       setState(() {
         currentlat = position.latitude;
         currentlong = position.longitude;
@@ -246,7 +295,7 @@ class _MapviewState extends State<Mapview> {
         ),
         layers: [
           new TileLayerOptions(
-            // urlTemplate: "https://apis.mapmyindia.com/advancedmaps/v1/ge79np57h6uwlfla4k4fzn2efrgoplnh/map_load?v=1.3"
+            // urlTemplate: "http://apis.mapmyindia.com/advancedmaps/v1/ge79np57h6uwlfla4k4fzn2efrgoplnh/still_image?center=widget.deslatitude,widget.deslongitude&zoom=18",
             urlTemplate:
                 "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}",
             additionalOptions: {
@@ -255,6 +304,16 @@ class _MapviewState extends State<Mapview> {
               'id': 'mapbox.streets',
             },
           ),
+          PolylineLayerOptions(
+            polylines: [
+              Polyline(
+                points: pt,
+                borderStrokeWidth: 10,
+                strokeWidth: 10.0,
+                color: Colors.purple,
+              ),
+            ],
+          ),
           new MarkerLayerOptions(
             markers: [
               new Marker(
@@ -262,7 +321,10 @@ class _MapviewState extends State<Mapview> {
                 height: 300.0,
                 point: new LatLng(currentlat, currentlong),
                 builder: (ctx) => new Container(
-                  child: Icon(Icons.location_on, color: Colors.green,),
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.green,
+                  ),
                 ),
               ),
               new Marker(
@@ -270,7 +332,10 @@ class _MapviewState extends State<Mapview> {
                 height: 300.0,
                 point: new LatLng(widget.deslatitude, widget.deslongitude),
                 builder: (ctx) => new Container(
-                  child: Icon(FontAwesomeIcons.mapPin, color: Colors.red,),
+                  child: Icon(
+                    FontAwesomeIcons.mapPin,
+                    color: Colors.red,
+                  ),
                 ),
               ),
             ],
