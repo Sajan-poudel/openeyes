@@ -16,7 +16,7 @@ const endpoint = "https://pitholedetection-prediction.cognitiveservices.azure.co
 const util = require('util');
 const PredictionApi = require("@azure/cognitiveservices-customvision-prediction");
 const publishIterationName = "Iteration3";
-const projectId = '24b19b77-2eed-4ba3-8bb6-4c4c137c73d0';
+const projectId = PROJECT_ID;
 //*CONFIG OVER*//
 
 //express csonfig//
@@ -37,7 +37,7 @@ app.post('/describe',(req, res)=>{
     //console.log(req.body);
     if(req.body.link!=null){
         microsofComputerVision.describeImage({
-            "Ocp-Apim-Subscription-Key": "742e6fe92be0491597da4dd9e3346635",
+            "Ocp-Apim-Subscription-Key": "SUBSCRIPTION_KEY",
             "request-origin":"westus2",
             "max-candidates":"1",
             "content-type": "application/json",
@@ -65,7 +65,7 @@ app.post('/frombase64-describe',(req, res)=>{
                 if (err) console.log(err);
                 console.log(data);
                 microsofComputerVision.describeImage({
-                    "Ocp-Apim-Subscription-Key": "742e6fe92be0491597da4dd9e3346635",
+                    "Ocp-Apim-Subscription-Key": "SUBSCRIPTION_KEY",
                     "request-origin":"westus2",
                     "max-candidates":"1",
                     "content-type": "application/octet-stream",
@@ -131,7 +131,7 @@ io.sockets.on('connection',(socket)=>{
               if (err) console.log(err);
               console.log(data);
               microsofComputerVision.describeImage({
-                  "Ocp-Apim-Subscription-Key": "742e6fe92be0491597da4dd9e3346635",
+                  "Ocp-Apim-Subscription-Key": "SUBSCRIPTION_KEY",
                   "request-origin":"westus2",
                   "max-candidates":"1",
                   "content-type": "application/octet-stream",
@@ -185,7 +185,7 @@ io.sockets.on('connection',(socket)=>{
     const stop_lat = coords.stop[0].toString();
     const stop_long = coords.stop[1].toString();
 
-      const licence_key = 'gof579h8whaje34td66mhljhuhd7znsr';
+      const licence_key = 'LICENSE_KEY';
     
       const reqURL='https://apis.mapmyindia.com/advancedmaps/v1/'+licence_key+'/route_adv/walking/'+start_lat+','+start_long+';'+stop_lat+','+stop_long+'?with_advices=1&steps=true';
       
